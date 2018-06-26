@@ -1,0 +1,1202 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "region":{
+            "type": "string"
+        },
+        "country":{
+            "type": "string"
+        },
+        "environment":{
+            "type": "string"
+        },
+        "sqlLogin":{
+            "type": "string"
+        },
+        "sqlPassword":{
+            "type": "securestring"
+        },
+        "tenantDomain":{
+            "type": "string"
+        },
+        "amsClientId": {
+            "type": "string"
+        },
+        "amsClientSecret": {
+            "type": "securestring"
+        }
+    },
+    "variables": {
+        "StorageApiVersion": "2017-06-01",
+        "serviceBusApiVersion": "2017-04-01",
+
+        "location": "[resourceGroup().location]",
+       
+        "ApplicationCode": "AEP",
+        "FrontApplicationCode": "WP",
+        "ProfileManagementApplicationCode": "PM",
+        "ContentManagementApplicationCode": "CM",
+        "RecommendationManagementApplicationCode": "RM",
+        "SkillManagementApplicationCode": "SM",
+        "AggregatorServiceApplicationCode": "AA",
+        "QuestionaireResultApplicationCode": "QR",
+        "EmployabilityIndexApplicationCode": "EI",
+        "AppInsightApplicationCode": "AI",
+
+        "ApiAppResourceType": "AAS",
+        "WebAppResourceType": "WAS",
+        "ApplicationServicePlanType": "ASP",
+        "ApplicationInsightResourceType": "AIN",
+        "KeyvaultResourceType": "KV",
+        "SqlDatabaseResourceType": "SQL",
+        "SqlServerResourceType": "SDS",
+        "MediaServiceResourceType": "AMS",
+        "FunctionAppResourceType" : "FAS",
+        "EventHubNamespaceResourceType": "EHNS",
+        "EventHubResourceType": "EVH",
+        "CosmosDbResourceType": "CDB",
+        "AzureDatabrickResourceType": "ADB",
+        "DataLakeAnalyticsResouceType": "dla",
+        "DataLakeStoreResouceType": "dls",
+        "StreamAnalyticsJobResourceType": "SAJ",
+        "DatabricksResourceType": "ADB",
+
+        "DatabricksWorkspaceName": "[concat(variables('DatabricksResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'))]",
+        "AppInsightStorageName": "[toLower(concat('sabh',parameters('region'),parameters('country'),parameters('environment'),variables('ApplicationCode'),variables('AppInsightApplicationCode')))]",
+        "StreamAnalyticsJobName": "[concat(variables('StreamAnalyticsJobResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'))]",
+        "DataLakeStoreName": "[toLower(concat(variables('DataLakeStoreResouceType'),parameters('region'),parameters('country'),parameters('environment'),variables('ApplicationCode')))]",
+        "DataLakeAnalyticsName": "[toLower(concat(variables('DataLakeAnalyticsResouceType'),parameters('region'),parameters('country'),parameters('environment'),variables('ApplicationCode')))]",
+        "AzureDataBrickName": "[concat(variables('AzureDataBrickResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'))]",
+        "ApplicationInsightName": "[concat(variables('ApplicationInsightResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'))]",
+        "KeyvaultName": "[concat(variables('KeyvaultResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'))]",
+        "SqlServerName": "[toLower(concat(variables('SqlServerResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode')))]",
+        "FrontServicePlanName": "[concat(variables('ApplicationServicePlanType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'),'-Front')]",
+        "FrontWebApplicationName": "[concat(variables('WebAppResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'),'-',variables('FrontApplicationCode'))]",
+        "MicroservicesPlanName": "[concat(variables('ApplicationServicePlanType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'),'-Microservices')]",
+        "ContentManagementWebApiName": "[concat(variables('ApiAppResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'),'-',variables('ContentManagementApplicationCode'))]",
+        "ContentManagementDatabaseName": "[concat(variables('SqlDatabaseResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'),'-',variables('ContentManagementApplicationCode'))]",
+        "ProfileManagementWebApiName": "[concat(variables('ApiAppResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'),'-',variables('ProfileManagementApplicationCode'))]",
+        "ProfileManagementStorageName": "[toLower(concat('sabh',parameters('region'),parameters('country'),parameters('environment'),variables('ApplicationCode'),variables('ProfileManagementApplicationCode')))]",
+        "ProfileManagementDatabaseName": "[concat(variables('SqlDatabaseResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'),'-',variables('ProfileManagementApplicationCode'))]",
+        "SkillManagementWebApiName": "[concat(variables('ApiAppResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'),'-',variables('SkillManagementApplicationCode'))]",
+        "RecommendationManagementWebApiName": "[concat(variables('ApiAppResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'),'-',variables('RecommendationManagementApplicationCode'))]",
+        "AggregatorServiceWebApiName": "[concat(variables('ApiAppResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'),'-',variables('AggregatorServiceApplicationCode'))]",
+        "FunctionAppServiceName": "[concat(variables('FunctionAppResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'))]",
+        "FunctionAppStorageName": "[toLower(concat('sabh',parameters('region'),parameters('country'),parameters('environment'),variables('ApplicationCode'),variables('FunctionAppResourceType')))]",
+        "EIFunctionAppServiceName": "[concat(variables('FunctionAppResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'),'-',variables('EmployabilityIndexApplicationCode'))]",
+        "EIFunctionAppStorageName": "[toLower(concat('sabh',parameters('region'),parameters('country'),parameters('environment'),variables('ApplicationCode'),variables('FunctionAppResourceType'),variables('EmployabilityIndexApplicationCode')))]",
+        "MediaServicesName": "[toLower(concat(variables('MediaServiceResourceType'),parameters('region'),parameters('country'),parameters('environment'),variables('ApplicationCode')))]",
+        "MediaServiceStorageName": "[toLower(concat('sabh',parameters('region'),parameters('country'),parameters('environment'),variables('ApplicationCode'),variables('MediaServiceResourceType')))]",
+        "EventHubNamespaceName": "[concat(variables('EventHubNamespaceResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'))]",
+        "EventHubName": "[toLower(concat(variables('EventHubResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode')))]",
+        "EscoDatabaseName": "[concat(variables('SqlDatabaseResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'),'-ESCO')]",
+        "CosmosDbAccountName": "[toLower(concat(variables('CosmosDbResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode')))]",
+        "CosmosDbQrAccountName": "[toLower(concat(variables('CosmosDbResourceType'),'-',parameters('region'),'-',parameters('country'),'-',parameters('environment'),'-',variables('ApplicationCode'),'-',variables('QuestionaireResultApplicationCode')))]",
+
+        "managedResourceGroupId": "[concat(subscription().id, '/resourceGroups/', variables('managedResourceGroupName'))]",
+        "managedResourceGroupName": "[concat('databricks-rg-', variables('DatabricksWorkspaceName'), '-', uniqueString(variables('DatabricksWorkspaceName'), resourceGroup().id))]"
+    },
+    "resources": [
+        {
+
+            "type": "Microsoft.Databricks/workspaces",
+            "name": "[variables('DatabricksWorkspaceName')]",      
+            "location": "[variables('location')]",      
+            "apiVersion": "2018-04-01",      
+            "sku": {      
+              "name": "standard"      
+            },
+            "properties": {
+                "ManagedResourceGroupId": "[variables('managedResourceGroupId')]"
+            }
+        },
+
+        {
+            "type": "Microsoft.DataLakeStore/accounts",
+            "name": "[variables('DataLakeStoreName')]",
+            "apiVersion": "2016-11-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {},
+            "dependsOn": []
+        },
+        {
+            "type": "Microsoft.DataLakeAnalytics/accounts",
+            "name": "[variables('DataLakeAnalyticsName')]",
+            "apiVersion": "2016-11-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "defaultDataLakeStoreAccount": "[variables('DataLakeStoreName')]",
+                "dataLakeStoreAccounts": [
+                    {
+                        "name": "[variables('DataLakeStoreName')]"
+                    }
+                ]
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.DataLakeStore/accounts', variables('DataLakeStoreName'))]"
+            ]
+        },
+        
+
+        {
+            "type": "Microsoft.EventHub/namespaces",
+            "sku": {
+                "name": "Standard",
+                "tier": "Standard",
+                "capacity": 1
+            },
+            "name": "[variables('EventHubNamespaceName')]",
+            "apiVersion": "2017-04-01",
+            "location": "[variables('location')]",
+            "tags": {},
+            "scale": null,
+            "properties": {
+                "isAutoInflateEnabled": true,
+                "maximumThroughputUnits": 20
+            },
+            "dependsOn": []
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/AuthorizationRules",
+            "name": "[concat(variables('EventHubNamespaceName'), '/RootManageSharedAccessKey')]",
+            "apiVersion": "2017-04-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "rights": [
+                    "Listen",
+                    "Manage",
+                    "Send"
+                ]
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', variables('EventHubNamespaceName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/eventhubs",
+            "name": "[concat(variables('EventHubNamespaceName'), '/', variables('EventHubName'))]",
+            "apiVersion": "2017-04-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "messageRetentionInDays": 2,
+                "partitionCount": 2,
+                "status": "Active"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', variables('EventHubNamespaceName'))]"
+            ]
+        },
+        {
+            "apiVersion": "2017-04-01",
+            "name": "[ concat( variables('EventHubNamespaceName'), '/', variables('EventHubName'), '/ManagePolicy' ) ]",
+            "type": "Microsoft.EventHub/Namespaces/EventHubs/authorizationRules",
+            "dependsOn": [
+              "[variables('EventHubName')]"
+            ],
+            "properties": {
+              "Rights": [ "Manage", "Listen", "Send" ]
+            }
+          },
+        {
+            "type": "Microsoft.EventHub/namespaces/eventhubs/consumergroups",
+            "name": "[concat(variables('EventHubNamespaceName'), '/', variables('EventHubName'), '/$Default')]",
+            "apiVersion": "2017-04-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', variables('EventHubNamespaceName'))]",
+                "[resourceId('Microsoft.EventHub/namespaces/eventhubs', variables('EventHubNamespaceName'), variables('EventHubName'))]"
+            ]
+        },
+        {
+            "type": "microsoft.insights/components",
+            "kind": "web",
+            "name": "[variables('ApplicationInsightName')]",
+            "apiVersion": "2014-04-01",
+            "location": "[variables('location')]",
+            "tags": {},
+            "scale": null,
+            "properties": {
+                "ApplicationId": "[variables('ApplicationInsightName')]"
+            },
+            "dependsOn": []
+        },
+
+        {
+            "type": "Microsoft.KeyVault/vaults",
+            "name": "[variables('KeyvaultName')]",
+            "apiVersion": "2015-06-01",
+            "location": "westeurope",
+            "tags": {},
+            "scale": null,
+            "properties": {
+                "sku": {
+                    "family": "A",
+                    "name": "Standard"
+                },
+                "tenantId": "f30ac191-b8b4-45f2-9a9b-e5466cb90c2f",
+                "accessPolicies": [
+                    {
+                        "tenantId": "f30ac191-b8b4-45f2-9a9b-e5466cb90c2f",
+                        "objectId": "91687efe-63fe-4902-8611-f6565e428fa1",
+                        "permissions": {
+                            "keys": [
+                                "Get",
+                                "List",
+                                "Update",
+                                "Create",
+                                "Import",
+                                "Delete",
+                                "Recover",
+                                "Backup",
+                                "Restore"
+                            ],
+                            "secrets": [
+                                "Get",
+                                "List",
+                                "Set",
+                                "Delete",
+                                "Recover",
+                                "Backup",
+                                "Restore"
+                            ]
+                        }
+                    }
+                ],
+                "enabledForDeployment": false
+            },
+            "dependsOn": []
+        },
+
+        {
+            "type": "Microsoft.Media/mediaservices",
+            "name": "[variables('MediaServicesName')]",
+            "apiVersion": "2015-10-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "storageAccounts": [
+                    {
+                        "id": "[resourceId('Microsoft.Storage/storageAccounts', variables('MediaServiceStorageName'))]",
+                        "isPrimary": true
+                    }
+                ]
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('MediaServiceStorageName'))]"
+            ]
+        },
+
+        {
+            "type": "Microsoft.Sql/servers",
+            "kind": "v12.0",
+            "name": "[variables('SqlServerName')]",
+            "apiVersion": "2015-05-01-preview",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "administratorLogin": "[parameters('sqlLogin')]",
+                "administratorLoginPassword": "[parameters('sqlPassword')]",
+                "version": "12.0"
+            },
+            "dependsOn": []
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases",
+            "kind": "v12.0,system",
+            "name": "[concat(variables('SqlServerName'), '/', 'master')]",
+            "apiVersion": "2014-04-01-preview",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "edition": "Basic",
+                "status": "Online",
+                "collation": "SQL_Latin1_General_CP1_CI_AS",
+                "defaultSecondaryLocation": "North Europe"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', variables('SqlServerName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases",
+            "kind": "v12.0,user",
+            "name": "[concat(variables('SqlServerName'), '/', variables('ProfileManagementDatabaseName'))]",
+            "apiVersion": "2014-04-01-preview",
+            "location": "[variables('location')]",
+            "properties": {
+                "edition": "Basic",
+                "status": "Online",
+                "collation": "SQL_Latin1_General_CP1_CI_AS"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', variables('SqlServerName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases",
+            "kind": "v12.0,user",
+            "name": "[concat(variables('SqlServerName'), '/', variables('EscoDatabaseName'))]",
+            "apiVersion": "2014-04-01-preview",
+            "location": "[variables('location')]",
+            "properties": {
+                "edition": "Standard",
+                "status": "Online",
+                "maxSizeBytes": "268435456000",
+                "collation": "SQL_Latin1_General_CP1_CI_AS"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', variables('SqlServerName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases",
+            "kind": "v12.0,user",
+            "name": "[concat(variables('SqlServerName'), '/', variables('ContentManagementDatabaseName'))]",
+            "apiVersion": "2014-04-01-preview",
+            "location": "[variables('location')]",
+            "properties": {
+                "edition": "Basic",
+                "status": "Online",
+                "collation": "SQL_Latin1_General_CP1_CI_AS"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', variables('SqlServerName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Sql/servers/firewallRules",
+            "kind": "v12.0",
+            "name": "[concat(variables('SqlServerName'),'/AzureFirewallRule')]",
+            "apiVersion": "2014-04-01-preview",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "startIpAddress": "0.0.0.0",
+                "endIpAddress": "0.0.0.0"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', variables('SqlServerName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Sql/servers/firewallRules",
+            "kind": "v12.0",
+            "name": "[concat(variables('SqlServerName'),'/DevAccessFirewallRule')]",
+            "condition": "[equals('dev', parameters('environment'))]",
+            "apiVersion": "2014-04-01-preview",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "startIpAddress": "0.0.0.0",
+                "endIpAddress": "255.255.255.255"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', variables('SqlServerName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Sql/servers/firewallRules",
+            "kind": "v12.0",
+            "name": "[concat(variables('SqlServerName'),'/IntAccessFirewallRule')]",
+            "condition": "[equals('int', parameters('environment'))]",
+            "apiVersion": "2014-04-01-preview",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "startIpAddress": "79.92.208.103",
+                "endIpAddress": "79.92.208.103"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', variables('SqlServerName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases/transparentDataEncryption",
+            "name": "[concat(variables('SqlServerName'), '/', variables('ProfileManagementDatabaseName'), '/current')]",
+            "apiVersion": "2014-04-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "status": "Enabled"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', variables('SqlServerName'))]",
+                "[resourceId('Microsoft.Sql/servers/databases', variables('SqlServerName'), variables('ProfileManagementDatabaseName'))]"
+            ]
+        },
+
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "BlobStorage",
+            "name": "[variables('ProfileManagementStorageName')]",
+            "apiVersion": "[variables('StorageApiVersion')]",
+            "location": "[variables('location')]",
+            "tags": {},
+            "scale": null,
+            "properties": {
+                "accessTier": "Hot",
+                "encryption": {
+                    "keySource": "Microsoft.Storage",
+                    "services": {
+                        "blob": {
+                            "enabled": true
+                        },
+                        "file": {
+                            "enabled": true
+                        }
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "Storage",
+            "name": "[variables('MediaServiceStorageName')]",
+            "apiVersion": "[variables('StorageApiVersion')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "encryption": {
+                    "keySource": "Microsoft.Storage",
+                    "services": {
+                        "blob": {
+                            "enabled": true
+                        },
+                        "file": {
+                            "enabled": true
+                        }
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "Storage",
+            "name": "[variables('FunctionAppStorageName')]",
+            "apiVersion": "2017-06-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "encryption": {
+                    "services": {
+                        "file": {
+                            "enabled": true
+                        },
+                        "blob": {
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "Storage",
+            "name": "[variables('EIFunctionAppStorageName')]",
+            "apiVersion": "2017-06-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "encryption": {
+                    "services": {
+                        "file": {
+                            "enabled": true
+                        },
+                        "blob": {
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                }
+            },
+            "dependsOn": []
+        },
+
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "sku": {
+                "name": "S1",
+                "tier": "Standard",
+                "size": "S1",
+                "family": "S",
+                "capacity": 1
+            },
+            "kind": "app",
+            "name": "[variables('FrontServicePlanName')]",
+            "apiVersion": "2016-09-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "name": "[variables('FrontServicePlanName')]"
+            },
+            "dependsOn": []
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "kind": "app",
+            "name": "[variables('FrontWebApplicationName')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "enabled": true,
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('FrontServicePlanName'))]",
+                "clientAffinityEnabled": true,
+                "httpsOnly": true
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('FrontServicePlanName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "name": "[concat(variables('FrontWebApplicationName'), '/web')]",
+            "apiVersion": "2016-08-01",
+            "location": "West Europe",
+            "properties": {
+                "remoteDebuggingEnabled": true,
+                "remoteDebuggingVersion": "VS2017",
+                "cors": {
+                    "allowedOrigins": [
+                        "*"
+                    ]
+                }
+            },            
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('FrontWebApplicationName'))]"
+            ]
+        },
+        {
+            "apiVersion": "2014-11-01",
+            "name": "[concat(variables('FrontWebApplicationName'), '/appsettings')]",
+            "type": "Microsoft.Web/sites/config",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('FrontWebApplicationName'))]"
+            ],
+            "properties": {
+              "ASPNETCORE_ENVIRONMENT": "[parameters('environment')]"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "name": "[concat(variables('FrontWebApplicationName'), '/', variables('FrontWebApplicationName'), '.azurewebsites.net')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "siteName": "[variables('FrontWebApplicationName')]",
+                "hostNameType": "Verified"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('FrontWebApplicationName'))]"
+            ]
+        },
+
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "sku": {
+                "name": "S2",
+                "tier": "Standard",
+                "size": "S2",
+                "family": "S",
+                "capacity": 1
+            },
+            "kind": "app",
+            "name": "[variables('MicroservicesPlanName')]",
+            "apiVersion": "2016-09-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "name": "[variables('MicroservicesPlanName')]"
+            },
+            "dependsOn": []
+        },
+        
+        
+        {
+            "type": "Microsoft.Web/sites",
+            "kind": "api",
+            "name": "[variables('ProfileManagementWebApiName')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "enabled": true,
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('MicroservicesPlanName'))]",
+                "clientAffinityEnabled": true,
+                "httpsOnly": true
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('MicroservicesPlanName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "name": "[concat(variables('ProfileManagementWebApiName'), '/web')]",
+            "apiVersion": "2016-08-01",
+            "location": "West Europe",
+            "properties": {
+                "remoteDebuggingEnabled": false
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('ProfileManagementWebApiName'))]"
+            ]
+        },
+        {
+            "apiVersion": "2014-11-01",
+            "name": "[concat(variables('ProfileManagementWebApiName'), '/appsettings')]",
+            "type": "Microsoft.Web/sites/config",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('ProfileManagementWebApiName'))]"
+            ],
+            "properties": {
+              "ASPNETCORE_ENVIRONMENT": "[parameters('environment')]"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "name": "[concat(variables('ProfileManagementWebApiName'), '/', variables('ProfileManagementWebApiName'), '.azurewebsites.net')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "siteName": "[variables('ProfileManagementWebApiName')]",
+                "hostNameType": "Verified"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('ProfileManagementWebApiName'))]"
+            ]
+        },
+
+        {
+            "type": "Microsoft.Web/sites",
+            "kind": "api",
+            "name": "[variables('AggregatorServiceWebApiName')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "enabled": true,
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('MicroservicesPlanName'))]",
+                "clientAffinityEnabled": true,
+                "httpsOnly": true
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('MicroservicesPlanName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "name": "[concat(variables('AggregatorServiceWebApiName'), '/web')]",
+            "apiVersion": "2016-08-01",
+            "location": "West Europe",
+            "properties": {
+                "remoteDebuggingEnabled": false
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('AggregatorServiceWebApiName'))]"
+            ]
+        },
+        {
+            "apiVersion": "2014-11-01",
+            "name": "[concat(variables('AggregatorServiceWebApiName'), '/appsettings')]",
+            "type": "Microsoft.Web/sites/config",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('AggregatorServiceWebApiName'))]"
+            ],
+            "properties": {
+              "ASPNETCORE_ENVIRONMENT": "[parameters('environment')]"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "name": "[concat(variables('AggregatorServiceWebApiName'), '/', variables('AggregatorServiceWebApiName'), '.azurewebsites.net')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "siteName": "[variables('AggregatorServiceWebApiName')]",
+                "hostNameType": "Verified"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('AggregatorServiceWebApiName'))]"
+            ]
+        },
+
+        {
+            "type": "Microsoft.Web/sites",
+            "kind": "api",
+            "name": "[variables('SkillManagementWebApiName')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "enabled": true,
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('MicroservicesPlanName'))]",
+                "clientAffinityEnabled": true,
+                "httpsOnly": true
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('MicroservicesPlanName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "name": "[concat(variables('SkillManagementWebApiName'), '/web')]",
+            "apiVersion": "2016-08-01",
+            "location": "West Europe",
+            "properties": {
+                "remoteDebuggingEnabled": false
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('SkillManagementWebApiName'))]"
+            ]
+        },
+        {
+            "apiVersion": "2014-11-01",
+            "name": "[concat(variables('SkillManagementWebApiName'), '/appsettings')]",
+            "type": "Microsoft.Web/sites/config",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('SkillManagementWebApiName'))]"
+            ],
+            "properties": {
+              "ASPNETCORE_ENVIRONMENT": "[parameters('environment')]"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "name": "[concat(variables('SkillManagementWebApiName'), '/', variables('SkillManagementWebApiName'), '.azurewebsites.net')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "siteName": "[variables('SkillManagementWebApiName')]",
+                "hostNameType": "Verified"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('SkillManagementWebApiName'))]"
+            ]
+        },
+
+        {
+            "type": "Microsoft.Web/sites",
+            "kind": "api",
+            "name": "[variables('RecommendationManagementWebApiName')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "enabled": true,
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('MicroservicesPlanName'))]",
+                "clientAffinityEnabled": true,
+                "httpsOnly": true
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('MicroservicesPlanName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "name": "[concat(variables('RecommendationManagementWebApiName'), '/web')]",
+            "apiVersion": "2016-08-01",
+            "location": "West Europe",
+            "properties": {
+                "remoteDebuggingEnabled": false
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('RecommendationManagementWebApiName'))]"
+            ]
+        },
+        {
+            "apiVersion": "2014-11-01",
+            "name": "[concat(variables('RecommendationManagementWebApiName'), '/appsettings')]",
+            "type": "Microsoft.Web/sites/config",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('RecommendationManagementWebApiName'))]"
+            ],
+            "properties": {
+              "ASPNETCORE_ENVIRONMENT": "[parameters('environment')]"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "name": "[concat(variables('RecommendationManagementWebApiName'), '/', variables('RecommendationManagementWebApiName'), '.azurewebsites.net')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "siteName": "[variables('RecommendationManagementWebApiName')]",
+                "hostNameType": "Verified"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('RecommendationManagementWebApiName'))]"
+            ]
+        },
+
+        {
+            "type": "Microsoft.Web/sites",
+            "kind": "api",
+            "name": "[variables('ContentManagementWebApiName')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "enabled": true,
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('MicroservicesPlanName'))]",
+                "clientAffinityEnabled": true,
+                "httpsOnly": true
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('MicroservicesPlanName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "name": "[concat(variables('ContentManagementWebApiName'), '/web')]",
+            "apiVersion": "2016-08-01",
+            "location": "West Europe",
+            "properties": {
+                "remoteDebuggingEnabled": false
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('ContentManagementWebApiName'))]"
+            ]
+        },
+        {
+            "apiVersion": "2014-11-01",
+            "name": "[concat(variables('ContentManagementWebApiName'), '/appsettings')]",
+            "type": "Microsoft.Web/sites/config",
+            "properties": {
+              "ASPNETCORE_ENVIRONMENT": "[parameters('environment')]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('ContentManagementWebApiName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "name": "[concat(variables('ContentManagementWebApiName'), '/', variables('ContentManagementWebApiName'), '.azurewebsites.net')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "siteName": "[variables('ContentManagementWebApiName')]",
+                "hostNameType": "Verified"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('ContentManagementWebApiName'))]"
+            ]
+        },
+
+        {
+            "type": "Microsoft.Web/sites",
+            "kind": "functionapp",
+            "name": "[variables('EIFunctionAppServiceName')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "enabled": true,
+                "httpsOnly": true,
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('MicroservicesPlanName'))]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('MicroservicesPlanName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "name": "[concat(variables('EIFunctionAppServiceName'), '/web')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "properties": {
+                "numberOfWorkers": 1,
+                "remoteDebuggingEnabled": false,
+                "cors": {
+                    "allowedOrigins": [
+                        "https://functions.azure.com",
+                        "https://functions-staging.azure.com",
+                        "https://functions-next.azure.com"
+                    ]
+                },
+                "alwaysOn": true
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('EIFunctionAppServiceName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "name": "[concat(variables('EIFunctionAppServiceName'), '/', variables('EIFunctionAppServiceName'), '.azurewebsites.net')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "properties": {
+                "siteName": "variables('EIFunctionAppServiceName')",
+                "hostNameType": "Verified"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('EIFunctionAppServiceName'))]"
+            ]
+        },
+        {
+            "apiVersion": "2014-11-01",
+            "name": "[concat(variables('EIFunctionAppServiceName'), '/appsettings')]",
+            "type": "Microsoft.Web/sites/config",
+            "properties": {
+              "AzureWebJobsDashboard": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('EIFunctionAppStorageName'),';AccountKey=',listkeys(variables('EIFunctionAppStorageName'), variables('StorageApiVersion')).keys[0].value, ';EndpointSuffix=core.windows.net')]",
+              "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('EIFunctionAppStorageName'),';AccountKey=',listkeys(variables('EIFunctionAppStorageName'), variables('StorageApiVersion')).keys[0].value, ';EndpointSuffix=core.windows.net')]",
+              "FUNCTIONS_EXTENSION_VERSION": "~1",
+              "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING" : "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('EIFunctionAppStorageName'),';AccountKey=',listkeys(variables('EIFunctionAppStorageName'), variables('StorageApiVersion')).keys[0].value, ';EndpointSuffix=core.windows.net')]",
+              "WEBSITE_CONTENTSHARE": "[variables('EIFunctionAppStorageName')]",
+
+              "CosmosDB": "Skills",
+              "CosmosDB_Collection": "SkillsGap",
+              "CosmosDB_EndPoint": "[concat('https://', variables('CosmosDbAccountName'), '.documents.azure.com:443/')]",
+              "CosmosDB_Key": "[listkeys(variables('CosmosDbAccountName'), '2015-04-08').primaryMasterKey]",
+              
+              "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(resourceId('microsoft.insights/components/', variables('ApplicationInsightName')), '2015-05-01').InstrumentationKey]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('EIFunctionAppServiceName'))]",
+                "[resourceId('microsoft.insights/components/', variables('ApplicationInsightName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('EIFunctionAppStorageName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('MediaServiceStorageName'))]"
+            ]
+        },
+
+        {
+            "type": "Microsoft.Web/sites",
+            "kind": "functionapp",
+            "name": "[variables('FunctionAppServiceName')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "scale": null,
+            "properties": {
+                "enabled": true,
+                "httpsOnly": true,
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('MicroservicesPlanName'))]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('MicroservicesPlanName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "name": "[concat(variables('FunctionAppServiceName'), '/web')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "properties": {
+                "numberOfWorkers": 1,
+                "remoteDebuggingEnabled": false,
+                "cors": {
+                    "allowedOrigins": [
+                        "https://functions.azure.com",
+                        "https://functions-staging.azure.com",
+                        "https://functions-next.azure.com"
+                    ]
+                },
+                "alwaysOn": true
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('FunctionAppServiceName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "name": "[concat(variables('FunctionAppServiceName'), '/', variables('FunctionAppServiceName'), '.azurewebsites.net')]",
+            "apiVersion": "2016-08-01",
+            "location": "[variables('location')]",
+            "properties": {
+                "siteName": "variables('FunctionAppServiceName')",
+                "hostNameType": "Verified"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('FunctionAppServiceName'))]"
+            ]
+        },
+        {
+            "apiVersion": "2014-11-01",
+            "name": "[concat(variables('FunctionAppServiceName'), '/appsettings')]",
+            "type": "Microsoft.Web/sites/config",
+            "properties": {
+              "AzureWebJobsDashboard": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('FunctionAppStorageName'),';AccountKey=',listkeys(variables('FunctionAppStorageName'), variables('StorageApiVersion')).keys[0].value, ';EndpointSuffix=core.windows.net')]",
+              "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('FunctionAppStorageName'),';AccountKey=',listkeys(variables('FunctionAppStorageName'), variables('StorageApiVersion')).keys[0].value, ';EndpointSuffix=core.windows.net')]",
+              "FUNCTIONS_EXTENSION_VERSION": "~1",
+              "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING" : "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('FunctionAppStorageName'),';AccountKey=',listkeys(variables('FunctionAppStorageName'), variables('StorageApiVersion')).keys[0].value, ';EndpointSuffix=core.windows.net')]",
+              "WEBSITE_CONTENTSHARE": "[variables('FunctionAppStorageName')]",
+
+
+              "AMSAADTenantDomain": "[parameters('tenantDomain')]",
+              "AMSRESTAPIEndpoint": "[concat('https://', variables('MediaServicesName') , '.restv2.westeurope.media.azure.net/api/')]",
+              "AMSClientId": "[parameters('amsClientId')]",
+              "AMSClientSecret": "[parameters('amsClientSecret')]",
+              "StorageConnection": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('MediaServiceStorageName'),';AccountKey=',listkeys(variables('MediaServiceStorageName'), variables('StorageApiVersion')).keys[0].value, ';EndpointSuffix=core.windows.net')]",
+              "ApiProfileUrl": "[concat('https://', variables('ProfileManagementWebApiName'), '.azurewebsites.net')]",
+              "ApiContentUrl": "[concat('https://', variables('ContentManagementWebApiName'), '.azurewebsites.net')]",
+
+              "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(resourceId('microsoft.insights/components/', variables('ApplicationInsightName')), '2015-05-01').InstrumentationKey]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('FunctionAppServiceName'))]",
+                "[resourceId('microsoft.insights/components/', variables('ApplicationInsightName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('FunctionAppStorageName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('MediaServiceStorageName'))]"
+            ]
+        },
+
+        {
+            "type": "Microsoft.DocumentDB/databaseAccounts",
+            "kind": "GlobalDocumentDB",
+            "name": "[variables('CosmosDbAccountName')]",
+            "apiVersion": "2015-04-08",
+            "location": "[variables('location')]",
+            "tags": {
+                "defaultExperience": "DocumentDB"
+            },
+            "scale": null,
+            "properties": {
+                "databaseAccountOfferType": "Standard",
+                "consistencyPolicy": {
+                    "defaultConsistencyLevel": "Session",
+                    "maxIntervalInSeconds": 5,
+                    "maxStalenessPrefix": 100
+                },
+                "name": "[variables('CosmosDbAccountName')]"
+            },
+            "dependsOn": []
+        },
+
+        {
+            "type": "Microsoft.DocumentDB/databaseAccounts",
+            "kind": "GlobalDocumentDB",
+            "name": "[variables('CosmosDbQrAccountName')]",
+            "apiVersion": "2015-04-08",
+            "location": "[variables('location')]",
+            "tags": {
+                "defaultExperience": "Table"
+            },
+            "scale": null,
+            "properties": {
+                "databaseAccountOfferType": "Standard",
+                "consistencyPolicy": {
+                    "defaultConsistencyLevel": "BoundedStaleness",
+                    "maxIntervalInSeconds": 86400,
+                    "maxStalenessPrefix": 1000000
+                },
+                "name": "[variables('CosmosDbQrAccountName')]"
+            },
+            "dependsOn": []
+        }
+    ],
+
+
+
+    "outputs":{
+        "AIKey":{
+            "type": "string",
+            "value": "[reference(variables('ApplicationInsightName')).InstrumentationKey]"
+        },
+        "frontRedirectUrl": {
+            "type": "string",
+            "value": "[toLower(concat('https://',variables('FrontWebApplicationName'),'.azurewebsites.net/signin-oidc'))]"
+        },
+        "eiUrl": {
+            "type": "string",
+            "value": "[toLower(concat('https://',variables('EIFunctionAppServiceName'),'.azurewebsites.net'))]"
+        },
+        "pmUrl": {
+            "type": "string",
+            "value": "[toLower(concat('https://',variables('ProfileManagementWebApiName'),'.azurewebsites.net'))]"
+        },
+        "pmStorageAccountConnectionString": {
+            "type": "string",
+            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('ProfileManagementStorageName'),';AccountKey=',listkeys(variables('ProfileManagementStorageName'), variables('StorageApiVersion')).keys[0].value, ';EndpointSuffix=core.windows.net')]"
+        },
+        "pmDatabaseConnectionString": {
+            "type": "string",
+            "value": "[concat('Server=tcp:',variables('SqlServerName'),'.database.windows.net,1433;Initial Catalog=',variables('ProfileManagementDatabaseName'),';Persist Security Info=False;User ID=',parameters('sqlLogin'),';Password=',parameters('sqlPassword'),';MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;')]"
+        },
+        "cmUrl": {
+            "type": "string",
+            "value": "[toLower(concat('https://',variables('ContentManagementWebApiName'),'.azurewebsites.net'))]"
+        },
+        "cmStorageAccountName": {
+            "type": "string",
+            "value": "[variables('MediaServiceStorageName')]"
+        },
+        "cmStorageAccountKey": {
+            "type": "string",
+            "value": "[listkeys(variables('MediaServiceStorageName'), variables('StorageApiVersion')).keys[0].value]"
+        },
+        "cmDatabaseConnectionString": {
+            "type": "string",
+            "value": "[concat('Server=tcp:',variables('SqlServerName'),'.database.windows.net,1433;Initial Catalog=',variables('ContentManagementDatabaseName'),';Persist Security Info=False;User ID=',parameters('sqlLogin'),';Password=',parameters('sqlPassword'),';MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;')]"
+        },
+        "rmUrl": {
+            "type": "string",
+            "value": "[toLower(concat('https://',variables('RecommendationManagementWebApiName'),'.azurewebsites.net'))]"
+        },
+        "smUrl": {
+            "type": "string",
+            "value": "[toLower(concat('https://',variables('SkillManagementWebApiName'),'.azurewebsites.net'))]"
+        },
+        "aaUrl": {
+            "type": "string",
+            "value": "[toLower(concat('https://',variables('AggregatorServiceWebApiName'),'.azurewebsites.net'))]"
+        },
+        "escoDatabaseConnectionString": {
+            "type": "string",
+            "value": "[concat('Server=tcp:',variables('SqlServerName'),'.database.windows.net,1433;Initial Catalog=',variables('EscoDatabaseName'),';Persist Security Info=False;User ID=',parameters('sqlLogin'),';Password=',parameters('sqlPassword'),';MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;')]"
+        },
+        "amsStorageAccountConnectionString": {
+            "type": "string",
+            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('MediaServiceStorageName'),';AccountKey=',listkeys(variables('MediaServiceStorageName'), variables('StorageApiVersion')).keys[0].value, ';EndpointSuffix=core.windows.net')]"
+        },
+        "amsRestApiEndPoint": {
+            "type": "string",
+            "value": "[concat('https://', variables('MediaServicesName') , '.restv2.westeurope.media.azure.net/api/')]"
+        },
+        "eventHubName": {
+            "type": "string",
+            "value": "[variables('EventHubName')]"
+        },
+        "eventHubConnectionString": {
+            "type": "string",
+            "value": "[listkeys(resourceId('Microsoft.EventHub/Namespaces/EventHubs/authorizationRules', variables('EventHubNamespaceName'), variables('EventHubName'), 'ManagePolicy'), variables('serviceBusApiVersion')).primaryConnectionString]"
+        },
+        "cosmosDbConnectionString": {
+            "type": "string",
+            "value": "[concat('AccountEndpoint=https://', variables('CosmosDbAccountName'), '.documents.azure.com:443/;AccountKey=', listkeys(variables('CosmosDbAccountName'), '2015-04-08').primaryMasterKey)]"
+        },
+        "cosmosDbQrConnectionString": {
+            "type": "string",
+            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('CosmosDbQrAccountName'), ';AccountKey=', listkeys(variables('CosmosDbQrAccountName'), '2015-04-08').primaryMasterKey, ';TableEndpoint=https://', variables('CosmosDbQrAccountName'), '.table.cosmosdb.azure.com:443/;')]"
+        }
+    }
+}
